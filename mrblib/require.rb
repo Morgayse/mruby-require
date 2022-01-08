@@ -1,18 +1,18 @@
 class LoadError < ScriptError; end
 
 $__mruby_require_toplevel_self__ = self
-begin
-  eval "1", nil
-  def _require_eval_load(*args)
-    $__mruby_require_toplevel_self__.eval(*args)
-  end
-rescue ArgumentError
-  def _require_eval_load(*args)
-    $__mruby_require_toplevel_self__.eval(args[0])
-  end
-end
-
 module Kernel
+  begin
+    eval "1", nil
+    def _require_eval_load(*args)
+      $__mruby_require_toplevel_self__.eval(*args)
+    end
+  rescue ArgumentError
+    def _require_eval_load(*args)
+      $__mruby_require_toplevel_self__.eval(args[0])
+    end
+  end
+
   def load(path)
     raise TypeError unless path.class == String
 
@@ -48,13 +48,14 @@ module Kernel
     filename = nil
     if ['/', '.'].include? path[0]
       path0 = filenames.find do |fname|
-        File.file?(fname)
+        ::File.file?(fname)
       end
     else
       dir = ($LOAD_PATH || []).find do |dir0|
         filename = filenames.find do |fname|
-          path0 = File.join dir0, fname
-          File.file?(path0)
+          # I don't know why :: is necessary here to access File, but it is.
+          path0 = ::File.join dir0, fname
+          ::File.file?(path0)
         end
       end
       path0 = dir && filename ? File.join(dir, filename) : nil
